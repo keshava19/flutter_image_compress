@@ -1,5 +1,6 @@
 package com.example.flutterimagecompress
 
+import android.app.Activity
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import io.flutter.plugin.common.MethodCall
@@ -7,14 +8,16 @@ import io.flutter.plugin.common.MethodChannel
 import java.io.ByteArrayOutputStream
 import java.util.concurrent.Executors
 
-class CompressListHandler(var call: MethodCall, var result: MethodChannel.Result) {
+class CompressListHandler(var call: MethodCall, var result: MethodChannel.Result) : AutoSaveExif {
+
+    override var info: ImageInfo = ImageInfo()
 
     companion object {
         @JvmStatic
         val executor = Executors.newFixedThreadPool(5)
     }
 
-    fun handle() {
+    fun handle(activity: Activity) {
         executor.execute {
             val args: List<Any> = call.arguments as List<Any>
             val arr = args[0] as ByteArray
@@ -22,8 +25,11 @@ class CompressListHandler(var call: MethodCall, var result: MethodChannel.Result
             val minHeight = args[2] as Int
             val quality = args[3] as Int
             val rotate = args[4] as Int
+            loadExif(activity, arr)
             try {
-                result.success(compress(arr, minWidth, minHeight, quality, rotate))
+                var bytes = compress(arr, minWidth, minHeight, quality, rotate)
+                bytes = saveExif(bytes)
+                result.success(bytes)
             } catch (e: Exception) {
                 result.success(null)
             }
