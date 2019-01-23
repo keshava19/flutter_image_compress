@@ -8,7 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 
 import 'package:path_provider/path_provider.dart' as path_provider;
-// import 'package:image_picker/image_picker.dart';
+ import 'package:image_picker/image_picker.dart';
 
 void main() => runApp(new MyApp());
 
@@ -40,6 +40,38 @@ class _MyAppState extends State<MyApp> {
     print("after = ${result?.length ?? 0}");
   }
 
+  File _image;
+
+  Future getImage() async {
+    var image = await ImagePicker.pickImage(source: ImageSource.camera, maxWidth: 1920, maxHeight: 1080);
+
+    setState(() {
+      _image = image;
+      image.readAsBytesSync();
+//      provider = Image.file(image).image;
+
+//      var x = testCompressFile(image);
+//      print(x.runtimeType);
+
+//      FlutterImageCompress.compressWithList(image.readAsBytesSync()).then((list) {
+//        provider = Image.memory(Uint8List.fromList(list)).image;
+//      });
+
+      if(_image != null) {
+//        print(_image.readAsBytes().then((bytes) => print(bytes.length)));
+
+        FlutterImageCompress.compressWithList(image.readAsBytesSync()).then((list) {
+          provider = Image.memory(Uint8List.fromList(list)).image;
+        });
+
+//        testCompressFile(image).then((bytes) {
+//          _image = File.fromRawPath(Uint8List.fromList(bytes));
+//          provider = Image.file(_image).image;
+//        });
+      }
+    });
+  }
+
   ImageProvider provider;
 
   @override
@@ -49,34 +81,40 @@ class _MyAppState extends State<MyApp> {
         appBar: new AppBar(
           title: const Text('Plugin example app'),
         ),
-        body: new Center(
-          child: Column(
-            children: <Widget>[
-              AspectRatio(
-                child: Image(
-                  image: provider ?? AssetImage("img/img.jpg"),
-                  width: double.infinity,
-                  fit: BoxFit.contain,
+        body: SingleChildScrollView(
+          child: new Center(
+            child: Column(
+              children: <Widget>[
+                AspectRatio(
+                  child: Image(
+                    image: provider ?? AssetImage("img/img.jpg"),
+                    width: double.infinity,
+                    fit: BoxFit.contain,
+                  ),
+                  aspectRatio: 1 / 1,
                 ),
-                aspectRatio: 1 / 1,
-              ),
-              FlatButton(
-                child: Text('CompressFile and rotate 180'),
-                onPressed: _testCompressFile,
-              ),
-              FlatButton(
-                child: Text('CompressAndGetFile and rotate 90'),
-                onPressed: getFileImage,
-              ),
-              FlatButton(
-                child: Text('CompressAsset and rotate 135'),
-                onPressed: () => testCompressAsset("img/img.jpg"),
-              ),
-              FlatButton(
-                child: Text('CompressList and rotate 270'),
-                onPressed: compressListExample,
-              ),
-            ],
+                FlatButton(
+                  child: Text('Capture Image'),
+                  onPressed: getImage,
+                ),
+                FlatButton(
+                  child: Text('CompressFile and rotate 180'),
+                  onPressed: _testCompressFile,
+                ),
+                FlatButton(
+                  child: Text('CompressAndGetFile and rotate 90'),
+                  onPressed: getFileImage,
+                ),
+                FlatButton(
+                  child: Text('CompressAsset and rotate 135'),
+                  onPressed: () => testCompressAsset("img/img.jpg"),
+                ),
+                FlatButton(
+                  child: Text('CompressList and rotate 270'),
+                  onPressed: compressListExample,
+                ),
+              ],
+            ),
           ),
         ),
         floatingActionButton: FloatingActionButton(
@@ -160,6 +198,21 @@ class _MyAppState extends State<MyApp> {
 
     return result;
   }
+
+   Future<List<int>> _compressWithImageProvider(
+       BuildContext context, ImageProvider provider,
+       {int minWidth = 1920, int minHeight = 1080, int quality = 95}) async {
+     var info = await getImageInfo(context, provider);
+     var data = await info.image.toByteData();
+     var list = data.buffer.asUint8List().toList();
+
+     return FlutterImageCompress.compressWithList(
+       list,
+       minWidth: minWidth,
+       minHeight: minHeight,
+       quality: quality,
+     );
+   }
 
   Future testCompressAsset(String assetName) async {
     print("testCompressAsset");
