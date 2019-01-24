@@ -9,6 +9,7 @@ import 'package:flutter_image_compress/flutter_image_compress.dart';
 
 import 'package:path_provider/path_provider.dart' as path_provider;
  import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
 
 void main() => runApp(new MyApp());
 
@@ -59,9 +60,14 @@ class _MyAppState extends State<MyApp> {
 
       if(_image != null) {
 //        print(_image.readAsBytes().then((bytes) => print(bytes.length)));
+        print('Size of the Image before compression ${image.readAsBytesSync().length}');
 
         FlutterImageCompress.compressWithList(image.readAsBytesSync()).then((list) {
-          provider = Image.memory(Uint8List.fromList(list)).image;
+          setState(() {
+            print('Size of the Image after compression ${list.length}');
+            provider = Image.memory(Uint8List.fromList(list)).image;
+            _saveFile(list);
+          });
         });
 
 //        testCompressFile(image).then((bytes) {
@@ -70,6 +76,12 @@ class _MyAppState extends State<MyApp> {
 //        });
       }
     });
+  }
+
+  _saveFile(List<int> bytes) async {
+    String dir = (await getExternalStorageDirectory()).path;
+    File file = new File('$dir/Download/${bytes.length}.png');
+    await file.writeAsBytes(bytes);
   }
 
   ImageProvider provider;
